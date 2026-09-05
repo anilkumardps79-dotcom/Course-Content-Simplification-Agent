@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Course Content Simplification Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #07080f;
+      --surface:      #0f1120;
+      --surface2:     #161929;
+      --surface3:     #1c2038;
+      --border:       rgba(255,255,255,.07);
+      --border-hi:    rgba(139,92,246,.4);
+      --primary:      #8b5cf6;
+      --primary-lt:   #a78bfa;
+      --primary-dk:   #7c3aed;
+      --cyan:         #06b6d4;
+      --cyan-lt:      #22d3ee;
+      --green:        #10b981;
+      --green-lt:     #34d399;
+      --amber:        #f59e0b;
+      --pink:         #ec4899;
+      --danger:       #f87171;
+      --text:         #f1f5f9;
+      --text-muted:   #64748b;
+      --text-soft:    #94a3b8;
+      --beginner:     #10b981;
+      --intermediate: #f59e0b;
+      --advanced:     #a78bfa;
+      --r:            16px;
+      --r-sm:         10px;
+      --r-xs:         6px;
+      --transition:   .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Starfield background ── */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 90% 60% at 10% -5%,  rgba(139,92,246,.22) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 90% 110%,  rgba(6,182,212,.16)  0%, transparent 55%),
+        radial-gradient(ellipse 60% 70% at 50% 50%,   rgba(124,58,237,.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─────────────────────────────────────────────
+       HERO
+    ───────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      padding: 72px 24px 60px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(139,92,246,.12);
+      border: 1px solid rgba(139,92,246,.35);
+      border-radius: 999px;
+      padding: 6px 16px 6px 10px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--primary-lt);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .hero-badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse-dot 2.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%,100% { transform: scale(1);   opacity: 1;  }
+      50%      { transform: scale(.6); opacity: .4; }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+      font-weight: 900;
+      letter-spacing: -.04em;
+      line-height: 1.08;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 .line1 {
+      display: block;
+      background: linear-gradient(90deg, #f1f5f9 0%, var(--primary-lt) 60%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero h1 .line2 {
+      display: block;
+      background: linear-gradient(90deg, var(--cyan-lt) 0%, var(--green-lt) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1.08rem;
+      color: var(--text-soft);
+      max-width: 540px;
+      margin: 0 auto 36px;
+      line-height: 1.65;
+    }
+
+    .hero-tags {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      padding: 7px 16px;
+      font-size: .8rem;
+      color: var(--text-soft);
+      font-weight: 500;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .hero-tag:hover {
+      background: rgba(139,92,246,.1);
+      border-color: rgba(139,92,246,.3);
+      color: var(--primary-lt);
+    }
+
+    /* ─────────────────────────────────────────────
+       LAYOUT
+    ───────────────────────────────────────────── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px 100px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .col-full { grid-column: 1 / -1; }
+
+    @media (max-width: 680px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─────────────────────────────────────────────
+       CARDS
+    ───────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 26px;
+      position: relative;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(139,92,246,.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .card:hover {
+      border-color: rgba(139,92,246,.3);
+      box-shadow: 0 0 0 1px rgba(139,92,246,.15), 0 20px 60px rgba(0,0,0,.5);
+    }
+
+    /* Card header */
+    .ch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .ch-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .ch-icon.purple { background: rgba(139,92,246,.18); border: 1px solid rgba(139,92,246,.3); }
+    .ch-icon.cyan   { background: rgba(6,182,212,.15);  border: 1px solid rgba(6,182,212,.3);  }
+    .ch-icon.green  { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); }
+    .ch-icon.amber  { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.3); }
+    .ch-icon.pink   { background: rgba(236,72,153,.15); border: 1px solid rgba(236,72,153,.3); }
+
+    .ch-icon svg { width: 18px; height: 18px; }
+
+    .ch-title {
+      font-size: .97rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.01em;
+    }
+
+    .ch-sub {
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* ─────────────────────────────────────────────
+       FORM ELEMENTS
+    ───────────────────────────────────────────── */
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .flabel {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
+
+    .flabel .opt {
+      font-size: .68rem;
+      font-weight: 400;
+      text-transform: none;
+      opacity: .6;
+      letter-spacing: 0;
+    }
+
+    textarea,
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,.03);
+      border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: var(--r-sm);
+      padding: 12px 15px;
+      font-size: .9rem;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+      resize: vertical;
+    }
+
+    textarea { min-height: 165px; }
+
+    textarea::placeholder,
+    input[type="text"]::placeholder { color: rgba(100,116,139,.45); }
+
+    textarea:focus,
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      background: rgba(139,92,246,.06);
+      box-shadow: 0 0 0 3px rgba(139,92,246,.15);
+    }
+
+    /* ─────────────────────────────────────────────
+       PDF ZONE
+    ───────────────────────────────────────────── */
+    .pdf-zone {
+      border: 1.5px dashed rgba(139,92,246,.3);
+      border-radius: var(--r-sm);
+      padding: 16px;
+      background: rgba(139,92,246,.04);
+      transition: border-color var(--transition), background var(--transition);
+      margin-bottom: 18px;
+    }
+
+    .pdf-zone:hover {
+      border-color: var(--primary);
+      background: rgba(139,92,246,.08);
+    }
+
+    .pdf-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input[type="file"] {
+      flex: 1;
+      min-width: 0;
+      font-size: .81rem;
+      color: var(--text-soft);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    input[type="file"]::-webkit-file-upload-button {
+      background: rgba(139,92,246,.2);
+      border: 1px solid rgba(139,92,246,.35);
+      color: var(--primary-lt);
+      border-radius: var(--r-xs);
+      padding: 5px 13px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    input[type="file"]::-webkit-file-upload-button:hover {
+      background: rgba(139,92,246,.35);
+    }
+
+    .btn-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(139,92,246,.18);
+      border: 1px solid rgba(139,92,246,.35);
+      color: var(--primary-lt);
+      border-radius: var(--r-xs);
+      padding: 9px 16px;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background var(--transition), transform .1s;
+      white-space: nowrap;
+    }
+
+    .btn-pdf:hover:not(:disabled) { background: rgba(139,92,246,.32); }
+    .btn-pdf:active:not(:disabled) { transform: scale(.97); }
+    .btn-pdf:disabled { opacity: .4; cursor: not-allowed; }
+
+    .pdf-msg {
+      display: none;
+      margin-top: 10px;
+      font-size: .8rem;
+      line-height: 1.5;
+      padding: 9px 13px;
+      border-radius: var(--r-xs);
+    }
+
+    .pdf-msg.visible      { display: block; }
+    .pdf-msg.ok           { color: var(--green-lt);  background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.25); }
+    .pdf-msg.error        { color: var(--danger);    background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.25); }
+
+    /* ─────────────────────────────────────────────
+       LEVEL PICKER
+    ───────────────────────────────────────────── */
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .level-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 14px 8px;
+      border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: var(--r-sm);
+      background: rgba(255,255,255,.02);
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: center;
+    }
+
+    .level-card .lc-emoji { font-size: 1.5rem; line-height: 1; }
+    .level-card .lc-name  { font-size: .78rem; font-weight: 700; color: var(--text); }
+    .level-card .lc-hint  { font-size: .67rem; color: var(--text-muted); line-height: 1.3; }
+
+    .level-card:hover { border-color: var(--primary); background: rgba(139,92,246,.08); }
+
+    .level-card[data-level="beginner"].active {
+      border-color: var(--beginner);
+      background: rgba(16,185,129,.1);
+      box-shadow: 0 0 0 1px rgba(16,185,129,.2);
+    }
+
+    .level-card[data-level="beginner"].active .lc-name { color: var(--beginner); }
+
+    .level-card[data-level="intermediate"].active {
+      border-color: var(--intermediate);
+      background: rgba(245,158,11,.1);
+      box-shadow: 0 0 0 1px rgba(245,158,11,.2);
+    }
+
+    .level-card[data-level="intermediate"].active .lc-name { color: var(--intermediate); }
+
+    .level-card[data-level="advanced"].active {
+      border-color: var(--advanced);
+      background: rgba(167,139,250,.1);
+      box-shadow: 0 0 0 1px rgba(167,139,250,.2);
+    }
+
+    .level-card[data-level="advanced"].active .lc-name { color: var(--advanced); }
+
+    /* Level description box */
+    .level-desc {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--r-sm);
+      padding: 13px 15px;
+      font-size: .81rem;
+      color: var(--text-soft);
+      line-height: 1.65;
+      margin-bottom: 18px;
+    }
+
+    .level-desc strong { font-weight: 700; }
+    .level-desc .b  { color: var(--beginner); }
+    .level-desc .i  { color: var(--intermediate); }
+    .level-desc .a  { color: var(--advanced); }
+
+    /* ─────────────────────────────────────────────
+       MAIN CTA BUTTON
+    ───────────────────────────────────────────── */
+    .btn-cta {
+      width: 100%;
+      padding: 15px 24px;
+      border-radius: var(--r-sm);
+      border: none;
+      background: linear-gradient(135deg, var(--primary-dk) 0%, var(--primary) 50%, #9333ea 100%);
+      background-size: 200% 200%;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      letter-spacing: .01em;
+      box-shadow: 0 4px 24px rgba(139,92,246,.4), inset 0 1px 0 rgba(255,255,255,.15);
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow var(--transition), transform var(--transition);
+    }
+
+    .btn-cta:hover:not(:disabled) {
+      box-shadow: 0 8px 36px rgba(139,92,246,.6), inset 0 1px 0 rgba(255,255,255,.2);
+      transform: translateY(-2px);
+    }
+
+    .btn-cta:active:not(:disabled) { transform: scale(.98); }
+    .btn-cta:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+
+    .btn-cta .spinner {
+      width: 17px; height: 17px;
+      border: 2.5px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: none;
+    }
+
+    .btn-cta.loading .spinner  { display: block; }
+    .btn-cta.loading .btn-text { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─────────────────────────────────────────────
+       SAMPLE CHIPS
+    ───────────────────────────────────────────── */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: .81rem;
+      font-weight: 500;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .chip:hover {
+      border-color: var(--primary-lt);
+      background: rgba(139,92,246,.12);
+      color: var(--primary-lt);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(139,92,246,.2);
+    }
+
+    /* ─────────────────────────────────────────────
+       ERROR
+    ───────────────────────────────────────────── */
+    .error-box {
+      display: none;
+      background: rgba(248,113,113,.08);
+      border: 1px solid rgba(248,113,113,.25);
+      border-radius: var(--r-sm);
+      padding: 14px 18px;
+      color: var(--danger);
+      font-size: .88rem;
+    }
+
+    .error-box.visible { display: block; }
+
+    /* ─────────────────────────────────────────────
+       RESULT CARD
+    ───────────────────────────────────────────── */
+    .result-card { display: none; }
+    .result-card.visible {
+      display: block;
+      animation: rise .4s cubic-bezier(.4,0,.2,1) both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .result-title {
+      flex: 1;
+      font-size: .97rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 13px;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .badge.beginner     { background: rgba(16,185,129,.15); color: var(--beginner);     border: 1px solid rgba(16,185,129,.3); }
+    .badge.intermediate { background: rgba(245,158,11,.15); color: var(--intermediate); border: 1px solid rgba(245,158,11,.3); }
+    .badge.advanced     { background: rgba(167,139,250,.15); color: var(--advanced);    border: 1px solid rgba(167,139,250,.3); }
+
+    /* Result sections */
+    .rs {
+      background: var(--surface2);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: var(--r-sm);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .rs:last-of-type { margin-bottom: 0; }
+
+    .rs::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .03;
+      pointer-events: none;
+    }
+
+    .rs-bar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3.5px;
+      border-radius: 4px 0 0 4px;
+    }
+
+    .rs.explanation .rs-bar { background: linear-gradient(180deg, var(--primary), var(--cyan)); }
+    .rs.concepts    .rs-bar { background: linear-gradient(180deg, var(--green), var(--cyan-lt)); }
+    .rs.analogy     .rs-bar { background: linear-gradient(180deg, var(--amber), var(--pink)); }
+    .rs.questions   .rs-bar { background: linear-gradient(180deg, var(--pink), #f43f5e); }
+    .rs.revision    .rs-bar { background: linear-gradient(180deg, var(--cyan), var(--primary-lt)); }
+    .rs.mcqs        .rs-bar { background: linear-gradient(180deg, var(--amber), var(--green)); }
+
+    .rs-title {
+      font-size: .73rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .rs pre {
+      font-size: .91rem;
+      line-height: 1.78;
+      color: var(--text);
+      white-space: pre-wrap;
+      font-family: inherit;
+    }
+
+    /* ─────────────────────────────────────────────
+       ACTION BUTTONS ROW
+    ───────────────────────────────────────────── */
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .btn-act {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 18px;
+      border-radius: var(--r-sm);
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.04);
+      color: var(--text-soft);
+      font-size: .84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .btn-act:hover:not(:disabled) {
+      border-color: var(--primary-lt);
+      background: rgba(139,92,246,.12);
+      color: var(--primary-lt);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(139,92,246,.2);
+    }
+
+    .btn-act:disabled { opacity: .35; cursor: not-allowed; }
+
+    .btn-act.featured {
+      background: rgba(16,185,129,.1);
+      border-color: rgba(16,185,129,.3);
+      color: var(--green-lt);
+    }
+
+    .btn-act.featured:hover:not(:disabled) {
+      background: rgba(16,185,129,.18);
+      border-color: var(--green);
+      box-shadow: 0 4px 16px rgba(16,185,129,.2);
+      transform: translateY(-1px);
+    }
+
+    /* ─────────────────────────────────────────────
+       STUDY STATUS & DIVIDER
+    ───────────────────────────────────────────── */
+    .study-status {
+      display: none;
+      font-size: .81rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+      padding: 9px 14px;
+      border-radius: var(--r-xs);
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.07);
+    }
+
+    .study-status.visible { display: block; }
+    .study-material { margin-top: 20px; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 28px 0 22px;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,.07);
+    }
+
+    /* ─────────────────────────────────────────────
+       FOOTER
+    ───────────────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 24px 20px 40px;
+      font-size: .74rem;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255,255,255,.06);
+      letter-spacing: .02em;
+    }
+
+    footer .fx {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    footer .sep { opacity: .3; }
+
+    footer .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--primary-lt);
+      font-weight: 600;
+    }
+
+    footer .brand span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--primary-lt);
+      box-shadow: 0 0 6px var(--primary-lt);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════ -->
+<div class="hero">
+
+  <div class="hero-badge">
+    <span class="dot"></span>
+    IBM watsonx.ai
+  </div>
+
+  <h1>
+    <span class="line1">Course Content</span>
+    <span class="line2">Simplification Agent</span>
+  </h1>
+
+  <p class="hero-sub">
+    Paste any complex course material, choose your learning level,
+    and get an instant AI-powered explanation tailored just for you.
+  </p>
+
+  <div class="hero-tags">
+    <span class="hero-tag">🌱 Beginner-friendly</span>
+    <span class="hero-tag">📌 Key concept extraction</span>
+    <span class="hero-tag">💡 Real-world analogies</span>
+    <span class="hero-tag">📚 Study material generation</span>
+    <span class="hero-tag">📄 PDF upload support</span>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════════ -->
+<div class="wrapper">
+<div class="grid">
+
+
+  <!-- ── Course Content Card ─────────────────────────────────────── -->
+  <div class="card">
+
+    <div class="ch">
+      <div class="ch-icon purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary-lt)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ch-title">Course Content</div>
+        <div class="ch-sub">Upload PDF or paste text below</div>
+      </div>
+    </div>
+
+    <!-- PDF zone -->
+    <div class="field">
+      <div class="flabel">Upload PDF</div>
+      <div class="pdf-zone">
+        <div class="pdf-row">
+          <input type="file" id="pdfFile" accept=".pdf,application/pdf" />
+          <button type="button" class="btn-pdf" id="extractPdfBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Extract PDF
+          </button>
+        </div>
+        <div class="pdf-msg" id="pdfStatus"></div>
+      </div>
+    </div>
+
+    <!-- Text area -->
+    <div class="field">
+      <div class="flabel">Paste Course Content</div>
+      <textarea id="content" placeholder="e.g. A neural network is a machine learning model inspired by the human brain. It consists of interconnected nodes called neurons arranged in layers…"></textarea>
+    </div>
+
+    <!-- Subject -->
+    <div class="field">
+      <div class="flabel">Subject Area <span class="opt">(optional)</span></div>
+      <input type="text" id="subject" placeholder="e.g. Calculus, Network Security, Python…"/>
+    </div>
+
+  </div>
+
+
+  <!-- ── Learning Level Card ─────────────────────────────────────── -->
+  <div class="card">
+
+    <div class="ch">
+      <div class="ch-icon cyan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--cyan-lt)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ch-title">Learning Level</div>
+        <div class="ch-sub">Choose the right level for you</div>
+      </div>
+    </div>
+
+    <div class="level-grid">
+
+      <button type="button" class="level-card active" data-level="beginner">
+        <span class="lc-emoji">🌱</span>
+        <span class="lc-name">Beginner</span>
+        <span class="lc-hint">No prior knowledge</span>
+      </button>
+
+      <button type="button" class="level-card" data-level="intermediate">
+        <span class="lc-emoji">📘</span>
+        <span class="lc-name">Intermediate</span>
+        <span class="lc-hint">Basic familiarity</span>
+      </button>
+
+      <button type="button" class="level-card" data-level="advanced">
+        <span class="lc-emoji">🚀</span>
+        <span class="lc-name">Advanced</span>
+        <span class="lc-hint">Expert knowledge</span>
+      </button>
+
+    </div>
+
+    <input type="hidden" id="level" value="beginner"/>
+
+    <div class="level-desc">
+      <strong class="b">Beginner</strong> — Simple words, everyday analogies, zero jargon.<br>
+      <strong class="i">Intermediate</strong> — Technical terms briefly explained; familiarity assumed.<br>
+      <strong class="a">Advanced</strong> — Precise language, nuance, and deeper connections.
+    </div>
+
+    <button class="btn-cta" id="simplify-btn" type="button">
+      <div class="spinner"></div>
+      <span class="btn-text">✨ &nbsp;Simplify Content</span>
+    </button>
+
+  </div>
+
+
+  <!-- ── Samples ──────────────────────────────────────────────────── -->
+  <div class="card col-full">
+
+    <div class="ch">
+      <div class="ch-icon amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ch-title">Quick-Start Samples</div>
+        <div class="ch-sub">Click any topic to auto-fill the form</div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <div class="chip" data-content="A neural network is a machine learning model inspired by the human brain. It consists of interconnected nodes called neurons arranged in layers. Each connection has a weight, and the network learns by adjusting these weights during training." data-subject="Artificial Intelligence" data-level="beginner">🧠 Neural Networks</div>
+      <div class="chip" data-content="Derivatives are a fundamental tool of calculus. The derivative of a position function is velocity, and the derivative of velocity is acceleration." data-subject="Calculus" data-level="beginner">📐 Derivatives</div>
+      <div class="chip" data-content="Quantum entanglement is a physical phenomenon that occurs when a group of particles are generated, interact, or share spatial proximity in a way such that the quantum state of each particle of the group cannot be described independently of the state of the others." data-subject="Quantum Physics" data-level="intermediate">⚛️ Quantum Entanglement</div>
+      <div class="chip" data-content="A TCP/IP SYN flood attack exploits the three-way handshake mechanism. The attacker sends a large number of SYN packets to the target server with spoofed IP addresses. The server allocates resources and sends SYN-ACK responses but never receives the final ACK, leaving half-open connections that exhaust server resources." data-subject="Network Security" data-level="advanced">🔒 SYN Flood Attack</div>
+      <div class="chip" data-content="Recursion in programming is a technique where a function calls itself directly or indirectly to solve a smaller instance of the same problem. A recursive function must have a base case that stops the recursion and a recursive case that reduces the problem size with each call." data-subject="Python Programming" data-level="beginner">🐍 Recursion (Python)</div>
+    </div>
+
+  </div>
+
+
+  <!-- ── Error ────────────────────────────────────────────────────── -->
+  <div class="error-box col-full" id="error-box"></div>
+
+
+  <!-- ── Result ───────────────────────────────────────────────────── -->
+  <div class="card col-full result-card" id="result-card">
+
+    <div class="result-head">
+      <div class="ch" style="margin-bottom:0;flex:1">
+        <div class="ch-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--green-lt)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="result-title">Simplified Result</div>
+      </div>
+      <span class="badge" id="level-badge"></span>
+    </div>
+
+    <div class="rs explanation">
+      <div class="rs-bar"></div>
+      <div class="rs-title">📖 &nbsp;Simplified Explanation</div>
+      <pre id="res-explanation"></pre>
+    </div>
+
+    <div class="rs concepts">
+      <div class="rs-bar"></div>
+      <div class="rs-title">📌 &nbsp;Key Concepts</div>
+      <pre id="res-concepts"></pre>
+    </div>
+
+    <div class="rs analogy" id="res-analogy-section" style="display:none">
+      <div class="rs-bar"></div>
+      <div class="rs-title">💡 &nbsp;Real-World Analogy</div>
+      <pre id="res-analogy"></pre>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-act featured" id="study-btn">📚 &nbsp;Generate Study Material</button>
+      <button type="button" class="btn-act" id="download-btn">📥 &nbsp;Download Result</button>
+    </div>
+
+    <div class="study-status" id="study-status"></div>
+
+    <div class="study-material" id="study-material" style="display:none;">
+
+      <div class="divider">Study Material</div>
+
+      <div class="rs questions">
+        <div class="rs-bar"></div>
+        <div class="rs-title">📝 &nbsp;Important Questions</div>
+        <pre id="study-questions"></pre>
+      </div>
+
+      <div class="rs revision">
+        <div class="rs-bar"></div>
+        <div class="rs-title">🔄 &nbsp;Quick Revision</div>
+        <pre id="study-revision"></pre>
+      </div>
+
+      <div class="rs mcqs">
+        <div class="rs-bar"></div>
+        <div class="rs-title">❓ &nbsp;MCQs</div>
+        <pre id="study-mcqs"></pre>
+      </div>
+
+    </div>
+
+  </div>
+
+
+</div><!-- /.grid -->
+</div><!-- /.wrapper -->
+
+
+<!-- ═══════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════ -->
+<footer>
+  <div class="fx">
+    <span class="brand"><span></span>Made with IBM Bob</span>
+    <span class="sep">·</span>
+    Course Content Simplification Agent
+    <span class="sep">·</span>
+    IBM watsonx.ai
+  </div>
+</footer>
+
+
+<script>
+  const API_BASE = "http://localhost:5000";
+
+  // ── Level cards ────────────────────────────────────────────────────
+  const levelCards = document.querySelectorAll(".level-card");
+  const levelInput = document.getElementById("level");
+
+  levelCards.forEach(card => {
+    card.addEventListener("click", () => {
+      levelCards.forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+      levelInput.value = card.dataset.level;
+    });
+  });
+
+  // ── Sample chips ───────────────────────────────────────────────────
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.getElementById("content").value = chip.dataset.content;
+      document.getElementById("subject").value = chip.dataset.subject || "";
+      const tl = chip.dataset.level || "beginner";
+      levelInput.value = tl;
+      levelCards.forEach(c => c.classList.toggle("active", c.dataset.level === tl));
+      document.getElementById("result-card").classList.remove("visible");
+      document.getElementById("study-material").style.display = "none";
+    });
+  });
+
+  // ── PDF extraction ─────────────────────────────────────────────────
+  const pdfFileEl    = document.getElementById("pdfFile");
+  const extractPdfBtn = document.getElementById("extractPdfBtn");
+  const pdfStatus    = document.getElementById("pdfStatus");
+
+  function setPdfMsg(text, type) {
+    pdfStatus.textContent = text;
+    pdfStatus.className   = "pdf-msg visible " + type;
+  }
+
+  extractPdfBtn.addEventListener("click", async () => {
+    const file = pdfFileEl.files[0];
+    pdfStatus.className = "pdf-msg";
+
+    if (!file) { setPdfMsg("⚠️ Please select a PDF file first.", "error"); return; }
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setPdfMsg("⚠️ Please select a valid PDF file.", "error"); return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setPdfMsg("⚠️ PDF must be smaller than 10 MB.", "error"); return;
+    }
+
+    extractPdfBtn.disabled = true;
+    extractPdfBtn.textContent = "⏳ Extracting…";
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res  = await fetch(`${API_BASE}/api/extract-pdf`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      document.getElementById("content").value = data.text || "";
+      setPdfMsg(`✓ ${data.filename} loaded (${data.pages} pages). Content extracted.`, "ok");
+      document.getElementById("result-card").classList.remove("visible");
+    } catch (e) {
+      setPdfMsg(`❌ ${e.message}`, "error");
+    } finally {
+      extractPdfBtn.disabled = false;
+      extractPdfBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Extract PDF`;
+    }
+  });
+
+  // ── Simplify ───────────────────────────────────────────────────────
+  const btn = document.getElementById("simplify-btn");
+
+  btn.addEventListener("click", async () => {
+    const content    = document.getElementById("content").value.trim();
+    const level      = levelInput.value;
+    const subject    = document.getElementById("subject").value.trim();
+    const errorBox   = document.getElementById("error-box");
+    const resultCard = document.getElementById("result-card");
+
+    errorBox.classList.remove("visible");
+    resultCard.classList.remove("visible");
+
+    if (!content) {
+      errorBox.textContent = "⚠️ Please paste some course content before simplifying.";
+      errorBox.classList.add("visible");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.classList.add("loading");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/simplify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ course_content: content, learning_level: level, subject_area: subject })
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || `HTTP ${res.status}`); }
+      const data = await res.json();
+
+      document.getElementById("res-explanation").textContent = data.simplified_explanation || "";
+      document.getElementById("res-concepts").textContent    = data.key_concepts || "";
+
+      const analogySec = document.getElementById("res-analogy-section");
+      if (data.analogy) {
+        document.getElementById("res-analogy").textContent = data.analogy;
+        analogySec.style.display = "block";
+      } else {
+        analogySec.style.display = "none";
+      }
+
+      const badge       = document.getElementById("level-badge");
+      const rl          = data.learning_level || level;
+      badge.textContent = rl.charAt(0).toUpperCase() + rl.slice(1);
+      badge.className   = `badge ${rl}`;
+
+      document.getElementById("study-material").style.display = "none";
+      document.getElementById("study-status").classList.remove("visible");
+
+      resultCard.classList.add("visible");
+      resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (e) {
+      errorBox.textContent = `❌ Error: ${e.message}. Make sure the backend is running on http://localhost:5000`;
+      errorBox.classList.add("visible");
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove("loading");
+    }
+  });
+
+  // ── Study Material ─────────────────────────────────────────────────
+  const studyBtn      = document.getElementById("study-btn");
+  const studyMaterial = document.getElementById("study-material");
+  const studyStatus   = document.getElementById("study-status");
+
+  studyBtn.addEventListener("click", async () => {
+    const content = document.getElementById("content").value.trim();
+    const level   = levelInput.value;
+    const subject = document.getElementById("subject").value.trim();
+
+    if (!content) {
+      studyStatus.textContent = "⚠️ Please enter or extract course content first.";
+      studyStatus.classList.add("visible");
+      return;
+    }
+
+    studyStatus.classList.remove("visible");
+    studyBtn.disabled    = true;
+    studyBtn.textContent = "⏳ Generating…";
+
+    try {
+      const res = await fetch(`${API_BASE}/api/study-material`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ course_content: content, learning_level: level, subject_area: subject })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      document.getElementById("study-questions").textContent = data.questions || "";
+      document.getElementById("study-revision").textContent  = data.revision  || "";
+      document.getElementById("study-mcqs").textContent      = data.mcqs      || "";
+
+      studyMaterial.style.display = "block";
+      studyStatus.textContent     = "✓ Study material generated successfully.";
+      studyStatus.classList.add("visible");
+      studyMaterial.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (e) {
+      studyStatus.textContent = `❌ ${e.message}`;
+      studyStatus.classList.add("visible");
+    } finally {
+      studyBtn.disabled    = false;
+      studyBtn.textContent = "📚 \xa0Generate Study Material";
+    }
+  });
+
+  // ── Download ───────────────────────────────────────────────────────
+  document.getElementById("download-btn").addEventListener("click", () => {
+    const explanation  = document.getElementById("res-explanation").textContent.trim();
+    const concepts     = document.getElementById("res-concepts").textContent.trim();
+    const analogySec   = document.getElementById("res-analogy-section");
+    const analogy      = document.getElementById("res-analogy").textContent.trim();
+    const level        = levelInput.value;
+    const subject      = document.getElementById("subject").value.trim();
+    const studySection = document.getElementById("study-material");
+    const studyQ       = document.getElementById("study-questions").textContent.trim();
+    const studyR       = document.getElementById("study-revision").textContent.trim();
+    const studyM       = document.getElementById("study-mcqs").textContent.trim();
+    const hasStudy     = studySection && studySection.style.display !== "none" && (studyQ || studyR || studyM);
+
+    const output =
+`COURSE CONTENT SIMPLIFICATION
+========================================
+
+Learning Level: ${level.charAt(0).toUpperCase() + level.slice(1)}
+${subject ? `Subject Area: ${subject}` : ""}
+
+SIMPLIFIED EXPLANATION
+========================================
+${explanation}
+
+KEY CONCEPTS
+========================================
+${concepts}
+
+${analogySec.style.display !== "none" && analogy ? `REAL-WORLD ANALOGY\n========================================\n${analogy}\n\n` : ""}${hasStudy ? `STUDY MATERIAL\n========================================\n\nIMPORTANT QUESTIONS\n${studyQ}\n\nQUICK REVISION\n${studyR}\n\nMCQS\n${studyM}\n\n` : ""}Generated by: Course Content Simplification Agent · IBM watsonx.ai
+`;
+
+    const blob = new Blob([output], { type: "text/plain;charset=utf-8" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = `course-study-${level}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
+
+</body>
+</html>
